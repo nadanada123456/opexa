@@ -235,37 +235,39 @@ function initContactForm() {
     };
 
     try {
-      /*
-       * ─────────────────────────────────────────────────────────
-       * OPTION A — Formspree (recommandé pour débutants)
-       * 1. Créez un compte sur https://formspree.io
-       * 2. Créez un formulaire et copiez votre endpoint
-       * 3. Remplacez 'YOUR_FORMSPREE_ID' ci-dessous
-       * ─────────────────────────────────────────────────────────
-       */
-      const FORMSPREE_ENDPOINT = 'https://formspree.io/f/xwvzrdzk';
+      // ── Remplacez YOUR_FORMSPREE_ID par votre vrai ID Formspree ──
+      const FORMSPREE_ENDPOINT = 'https://formspree.io/f/YOUR_FORMSPREE_ID';
+
+      // On utilise FormData natif pour éviter tout problème CORS
+      const fd = new FormData();
+      Object.entries(formData).forEach(([k, v]) => fd.append(k, v));
 
       const res = await fetch(FORMSPREE_ENDPOINT, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        body: JSON.stringify(formData),
+        headers: { 'Accept': 'application/json' },
+        body: fd,
       });
 
-      if (res.ok) {
+      // Formspree renvoie 200 ou 201 en cas de succès
+      if (res.status === 200 || res.status === 201) {
         form.reset();
         successMsg.hidden = false;
+        errorMsg.hidden   = true;
         successMsg.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       } else {
-        const data = await res.json();
-        throw new Error(data?.error || 'Server error');
+        // Tenter de lire le message d'erreur Formspree
+        let errMsg = 'Erreur serveur';
+        try {
+          const data = await res.json();
+          errMsg = data?.error || data?.errors?.[0]?.message || errMsg;
+        } catch (_) {}
+        throw new Error(errMsg);
       }
 
     } catch (err) {
       console.error('Form error:', err);
-      errorMsg.hidden = false;
+      successMsg.hidden = true;
+      errorMsg.hidden   = false;
       errorMsg.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     } finally {
       submitBtn.classList.remove('loading');
