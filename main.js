@@ -170,7 +170,7 @@ function initContactForm() {
     // ⚠️  Remplacez YOUR_FORMSPREE_ID par votre vrai ID
     //     Ex: 'https://formspree.io/f/xpwqjkzb'
     // ════════════════════════════════════════════════════
-    const ENDPOINT = 'https://formspree.io/f/YOUR_FORMSPREE_ID';
+    const ENDPOINT = 'https://formspree.io/f/xwvzrdzk';
 
     try {
       const res  = await fetch(ENDPOINT, {
