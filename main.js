@@ -99,7 +99,7 @@ function initContactForm() {
   if (!form || !successMsg || !errorMsg) return;
 
   // Cacher les deux messages au chargement initial
-  successMsg.hidden = true;
+  successMsg.style.display = 'none';
   errorMsg.hidden   = true;
 
   // Validation : nom, email, service obligatoires — message optionnel
@@ -149,7 +149,7 @@ function initContactForm() {
     e.preventDefault();
 
     // Cacher les deux messages avant chaque tentative
-    successMsg.hidden = true;
+    successMsg.style.display = 'none';
     errorMsg.hidden   = true;
 
     if (!validate()) return;
@@ -185,7 +185,7 @@ function initContactForm() {
       if (res.ok) {
         // ✅ Succès — afficher seulement le message vert
         form.reset();
-        successMsg.hidden = false;
+        successMsg.style.display = 'flex';
         successMsg.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       } else {
         // ❌ Erreur Formspree
@@ -195,7 +195,7 @@ function initContactForm() {
     } catch (err) {
       console.error('Form error:', err.message);
       // ❌ Afficher seulement le message rouge
-      errorMsg.hidden = false;
+      errorMsg.style.display = 'flex';
       errorMsg.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     } finally {
       submitBtn.classList.remove('loading');
