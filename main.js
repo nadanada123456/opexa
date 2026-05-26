@@ -166,11 +166,7 @@ function initContactForm() {
       message:   document.getElementById('message')?.value.trim()   || '',
     };
 
-    // ════════════════════════════════════════════════════
-    // ⚠️  Remplacez YOUR_FORMSPREE_ID par votre vrai ID
-    //     Ex: 'https://formspree.io/f/xpwqjkzb'
-    // ════════════════════════════════════════════════════
-    const ENDPOINT = 'https://formspree.io/f/xwvzrdzk';
+    const ENDPOINT = 'https://formspree.io/f/maqklpqg';
 
     try {
       const res  = await fetch(ENDPOINT, {
