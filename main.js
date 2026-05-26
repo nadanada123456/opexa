@@ -1,13 +1,5 @@
-/* ============================================================
-   OPEXA CONSULTING — main.js
-   Features: Navbar scroll, mobile menu, counter animation,
-             scroll reveal, contact form with Formspree,
-             back to top, smooth UX
-   ============================================================ */
-
 'use strict';
 
-// ===== DOM READY =====
 document.addEventListener('DOMContentLoaded', () => {
   initNavbar();
   initMobileMenu();
@@ -19,39 +11,26 @@ document.addEventListener('DOMContentLoaded', () => {
   initSmoothScroll();
 });
 
-// ===================================================
-// 1. NAVBAR — shrinks on scroll
-// ===================================================
+// 1. NAVBAR
 function initNavbar() {
   const navbar = document.getElementById('navbar');
   if (!navbar) return;
-
-  const onScroll = () => {
-    if (window.scrollY > 60) {
-      navbar.classList.add('scrolled');
-    } else {
-      navbar.classList.remove('scrolled');
-    }
-  };
+  const onScroll = () => navbar.classList.toggle('scrolled', window.scrollY > 60);
   window.addEventListener('scroll', onScroll, { passive: true });
-  onScroll(); // run once on load
+  onScroll();
 }
 
-// ===================================================
 // 2. MOBILE MENU
-// ===================================================
 function initMobileMenu() {
-  const burger    = document.getElementById('burger');
-  const navLinks  = document.getElementById('navLinks');
+  const burger   = document.getElementById('burger');
+  const navLinks = document.getElementById('navLinks');
   if (!burger || !navLinks) return;
 
   burger.addEventListener('click', () => {
     const isOpen = navLinks.classList.toggle('open');
     burger.classList.toggle('open', isOpen);
-    burger.setAttribute('aria-expanded', isOpen.toString());
+    burger.setAttribute('aria-expanded', String(isOpen));
   });
-
-  // Close on link click
   navLinks.querySelectorAll('a').forEach(link => {
     link.addEventListener('click', () => {
       navLinks.classList.remove('open');
@@ -59,8 +38,6 @@ function initMobileMenu() {
       burger.setAttribute('aria-expanded', 'false');
     });
   });
-
-  // Close on outside click
   document.addEventListener('click', (e) => {
     if (!burger.contains(e.target) && !navLinks.contains(e.target)) {
       navLinks.classList.remove('open');
@@ -70,76 +47,36 @@ function initMobileMenu() {
   });
 }
 
-// ===================================================
-// 3. COUNTER ANIMATION
-// ===================================================
+// 3. COUNTERS
 function initCounters() {
   const counters = document.querySelectorAll('.stat-num[data-target]');
   if (!counters.length) return;
 
-  const animateCounter = (el) => {
-    const target   = parseInt(el.dataset.target, 10);
-    const duration = 1800;
-    const start    = performance.now();
-
-    const step = (now) => {
-      const elapsed  = now - start;
-      const progress = Math.min(elapsed / duration, 1);
-      // easeOutExpo
-      const eased    = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
-      el.textContent = Math.floor(eased * target);
-      if (progress < 1) requestAnimationFrame(step);
+  const animate = (el) => {
+    const target = parseInt(el.dataset.target, 10);
+    const start  = performance.now();
+    const dur    = 1800;
+    const step   = (now) => {
+      const p = Math.min((now - start) / dur, 1);
+      const e = 1 - Math.pow(2, -10 * p);
+      el.textContent = Math.floor(e * target);
+      if (p < 1) requestAnimationFrame(step);
     };
     requestAnimationFrame(step);
   };
 
-  // Trigger when hero is visible (IntersectionObserver)
   const hero = document.querySelector('.hero');
   if (!hero) return;
-
   const obs = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        counters.forEach(el => animateCounter(el));
-        obs.disconnect();
-      }
+      if (entry.isIntersecting) { counters.forEach(animate); obs.disconnect(); }
     });
-  }, { threshold: 0.4 });
-
+  }, { threshold: 0.3 });
   obs.observe(hero);
 }
 
-// ===================================================
 // 4. SCROLL REVEAL
-// ===================================================
 function initScrollReveal() {
-  // Add reveal class to target elements
-  const selectors = [
-    '.service-card',
-    '.testi-card',
-    '.ap-pillar',
-    '.cd-item',
-    '.section-header',
-    '.apropos-content',
-    '.apropos-visual',
-    '.contact-info',
-    '.contact-form-wrap',
-    '.ref-logo-item',
-  ];
-
-  selectors.forEach((sel, i) => {
-    document.querySelectorAll(sel).forEach((el, j) => {
-      el.classList.add('reveal');
-      // Stagger cards in a grid
-      if (['SERVICE-CARD','TESTI-CARD'].includes(el.tagName?.toUpperCase()) || 
-          el.classList.contains('service-card') ||
-          el.classList.contains('testi-card') ||
-          el.classList.contains('ref-logo-item')) {
-        el.style.transitionDelay = `${(j % 3) * 0.12}s`;
-      }
-    });
-  });
-
   const observer = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
       if (entry.isIntersecting) {
@@ -147,124 +84,118 @@ function initScrollReveal() {
         observer.unobserve(entry.target);
       }
     });
-  }, { threshold: 0.12 });
+  }, { threshold: 0.1 });
 
   document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
 }
 
-// ===================================================
-// 5. CONTACT FORM — Formspree integration
-//    → Replace ACTION_URL with your Formspree endpoint
-// ===================================================
+// 5. CONTACT FORM
 function initContactForm() {
   const form       = document.getElementById('contactForm');
   const submitBtn  = document.getElementById('submitBtn');
   const successMsg = document.getElementById('formSuccess');
   const errorMsg   = document.getElementById('formError');
 
-  if (!form) return;
+  if (!form || !successMsg || !errorMsg) return;
 
-  // ── Inline validation helpers ──
+  // Cacher les deux messages au chargement initial
+  successMsg.hidden = true;
+  errorMsg.hidden   = true;
+
+  // Validation : nom, email, service obligatoires — message optionnel
   const fields = {
-    nom:     { el: form.querySelector('#nom'),     msg: 'Veuillez saisir votre nom complet.' },
-    email:   { el: form.querySelector('#email'),   msg: 'Adresse email invalide.' },
-    service: { el: form.querySelector('#service'), msg: 'Veuillez choisir un service.' },
-    message: { el: form.querySelector('#message'), msg: 'Votre message est trop court.' },
+    nom:     { el: document.getElementById('nom'),     msg: 'Veuillez saisir votre nom.' },
+    email:   { el: document.getElementById('email'),   msg: 'Email invalide.' },
+    service: { el: document.getElementById('service'), msg: 'Veuillez choisir un service.' },
   };
 
-  const showError = (field, msg) => {
-    field.el.classList.add('invalid');
-    const errEl = field.el.closest('.form-group').querySelector('.form-error');
-    if (errEl) errEl.textContent = msg;
+  const showErr = (el, msg) => {
+    el.classList.add('invalid');
+    const span = el.closest('.form-group')?.querySelector('.form-error');
+    if (span) span.textContent = msg;
   };
 
-  const clearError = (field) => {
-    field.el.classList.remove('invalid');
-    const errEl = field.el.closest('.form-group').querySelector('.form-error');
-    if (errEl) errEl.textContent = '';
+  const clearErr = (el) => {
+    el.classList.remove('invalid');
+    const span = el.closest('.form-group')?.querySelector('.form-error');
+    if (span) span.textContent = '';
   };
 
-  // Live validation on blur
-  Object.values(fields).forEach(field => {
-    if (!field.el) return;
-    field.el.addEventListener('blur', () => validateField(field));
-    field.el.addEventListener('input', () => clearError(field));
+  Object.values(fields).forEach(({ el }) => {
+    if (!el) return;
+    el.addEventListener('input',  () => clearErr(el));
+    el.addEventListener('change', () => clearErr(el));
   });
 
-  const validateField = (field) => {
-    if (!field.el) return true;
-    const val = field.el.value.trim();
+  const validate = () => {
+    let ok = true;
+    const nom = fields.nom.el;
+    if (nom && !nom.value.trim()) { showErr(nom, fields.nom.msg); ok = false; }
+    else if (nom) clearErr(nom);
 
-    if (field.el.id === 'email') {
-      const emailRx = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRx.test(val)) { showError(field, field.msg); return false; }
-    } else if (field.el.id === 'message') {
-      if (val.length < 15) { showError(field, 'Veuillez écrire au moins 15 caractères.'); return false; }
-    } else {
-      if (!val) { showError(field, field.msg); return false; }
-    }
-    clearError(field);
-    return true;
+    const email = fields.email.el;
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value.trim())) {
+      showErr(email, fields.email.msg); ok = false;
+    } else if (email) clearErr(email);
+
+    const service = fields.service.el;
+    if (service && !service.value) { showErr(service, fields.service.msg); ok = false; }
+    else if (service) clearErr(service);
+
+    return ok;
   };
 
-  const validateAll = () => {
-    return Object.values(fields).map(f => validateField(f)).every(Boolean);
-  };
-
-  // ── Form submission ──
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
 
-    // Hide previous status
+    // Cacher les deux messages avant chaque tentative
     successMsg.hidden = true;
     errorMsg.hidden   = true;
 
-    if (!validateAll()) return;
+    if (!validate()) return;
 
-    // Loading state
     submitBtn.classList.add('loading');
     submitBtn.disabled = true;
 
-    const formData = {
-      nom:      form.nom.value.trim(),
-      societe:  form.societe?.value.trim() || '',
-      email:    form.email.value.trim(),
-      telephone:form.telephone?.value.trim() || '',
-      service:  form.service.value,
-      message:  form.message.value.trim(),
+    const payload = {
+      nom:       document.getElementById('nom')?.value.trim()       || '',
+      societe:   document.getElementById('societe')?.value.trim()   || '',
+      email:     document.getElementById('email')?.value.trim()     || '',
+      telephone: document.getElementById('telephone')?.value.trim() || '',
+      service:   document.getElementById('service')?.value          || '',
+      message:   document.getElementById('message')?.value.trim()   || '',
     };
 
-    // ════════════════════════════════════════════════
-    // ⚠️  REMPLACEZ CETTE VALEUR par votre vrai ID
-    //     Exemple : 'https://formspree.io/f/xpwqjkzb'
-    // ════════════════════════════════════════════════
-    const FORMSPREE_ENDPOINT = 'https://formspree.io/f/xwvzrdzk';
+    // ════════════════════════════════════════════════════
+    // ⚠️  Remplacez YOUR_FORMSPREE_ID par votre vrai ID
+    //     Ex: 'https://formspree.io/f/xpwqjkzb'
+    // ════════════════════════════════════════════════════
+    const ENDPOINT = 'https://formspree.io/f/YOUR_FORMSPREE_ID';
 
     try {
-      const res = await fetch(FORMSPREE_ENDPOINT, {
+      const res  = await fetch(ENDPOINT, {
         method:  'POST',
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-        body:    JSON.stringify(formData),
+        body:    JSON.stringify(payload),
       });
 
-      // Lire la réponse JSON dans tous les cas
       let data = {};
       try { data = await res.json(); } catch (_) {}
 
-      // Formspree envoie { ok: true } ou { error: "..." }
-      if (data.ok === true || res.status === 200 || res.status === 201) {
+      if (res.ok) {
+        // ✅ Succès — afficher seulement le message vert
         form.reset();
         successMsg.hidden = false;
-        errorMsg.hidden   = true;
         successMsg.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       } else {
-        throw new Error(data.error || `HTTP ${res.status}`);
+        // ❌ Erreur Formspree
+        throw new Error(data?.error || 'Erreur ' + res.status);
       }
 
     } catch (err) {
-      console.error('Form error:', err);
-      successMsg.hidden = true;
-      errorMsg.hidden   = false;
+      console.error('Form error:', err.message);
+      // ❌ Afficher seulement le message rouge
+      errorMsg.hidden = false;
       errorMsg.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     } finally {
       submitBtn.classList.remove('loading');
@@ -273,42 +204,29 @@ function initContactForm() {
   });
 }
 
-// ===================================================
 // 6. BACK TO TOP
-// ===================================================
 function initBackToTop() {
   const btn = document.getElementById('backToTop');
   if (!btn) return;
-
-  window.addEventListener('scroll', () => {
-    btn.classList.toggle('visible', window.scrollY > 400);
-  }, { passive: true });
-
-  btn.addEventListener('click', () => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  });
+  window.addEventListener('scroll', () => btn.classList.toggle('visible', window.scrollY > 400), { passive: true });
+  btn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
 }
 
-// ===================================================
-// 7. FOOTER YEAR
-// ===================================================
+// 7. YEAR
 function initYear() {
   const el = document.getElementById('year');
   if (el) el.textContent = new Date().getFullYear();
 }
 
-// ===================================================
-// 8. SMOOTH SCROLL (polyfill for older browsers)
-// ===================================================
+// 8. SMOOTH SCROLL
 function initSmoothScroll() {
   document.querySelectorAll('a[href^="#"]').forEach(link => {
     link.addEventListener('click', (e) => {
       const target = document.querySelector(link.getAttribute('href'));
       if (!target) return;
       e.preventDefault();
-      const navH = document.getElementById('navbar')?.offsetHeight || 72;
-      const top  = target.getBoundingClientRect().top + window.scrollY - navH;
-      window.scrollTo({ top, behavior: 'smooth' });
+      const navH = document.getElementById('navbar')?.offsetHeight || 70;
+      window.scrollTo({ top: target.getBoundingClientRect().top + window.scrollY - navH, behavior: 'smooth' });
     });
   });
 }
