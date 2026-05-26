@@ -234,34 +234,31 @@ function initContactForm() {
       message:  form.message.value.trim(),
     };
 
+    // ════════════════════════════════════════════════
+    // ⚠️  REMPLACEZ CETTE VALEUR par votre vrai ID
+    //     Exemple : 'https://formspree.io/f/xpwqjkzb'
+    // ════════════════════════════════════════════════
+    const FORMSPREE_ENDPOINT = 'https://formspree.io/f/xwvzrdzk';
+
     try {
-      // ── Remplacez YOUR_FORMSPREE_ID par votre vrai ID Formspree ──
-      const FORMSPREE_ENDPOINT = 'https://formspree.io/f/YOUR_FORMSPREE_ID';
-
-      // On utilise FormData natif pour éviter tout problème CORS
-      const fd = new FormData();
-      Object.entries(formData).forEach(([k, v]) => fd.append(k, v));
-
       const res = await fetch(FORMSPREE_ENDPOINT, {
-        method: 'POST',
-        headers: { 'Accept': 'application/json' },
-        body: fd,
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body:    JSON.stringify(formData),
       });
 
-      // Formspree renvoie 200 ou 201 en cas de succès
-      if (res.status === 200 || res.status === 201) {
+      // Lire la réponse JSON dans tous les cas
+      let data = {};
+      try { data = await res.json(); } catch (_) {}
+
+      // Formspree envoie { ok: true } ou { error: "..." }
+      if (data.ok === true || res.status === 200 || res.status === 201) {
         form.reset();
         successMsg.hidden = false;
         errorMsg.hidden   = true;
         successMsg.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       } else {
-        // Tenter de lire le message d'erreur Formspree
-        let errMsg = 'Erreur serveur';
-        try {
-          const data = await res.json();
-          errMsg = data?.error || data?.errors?.[0]?.message || errMsg;
-        } catch (_) {}
-        throw new Error(errMsg);
+        throw new Error(data.error || `HTTP ${res.status}`);
       }
 
     } catch (err) {
